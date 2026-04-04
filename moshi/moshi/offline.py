@@ -53,6 +53,7 @@ import sphn
 from huggingface_hub import hf_hub_download
 
 from .client_utils import make_log
+from .qobox_kb import merge_prompt_with_qobox_kb
 from .models import loaders, LMGen, MimiModel
 from .models.lm import load_audio as lm_load_audio
 from .models.lm import _iterate_audio as lm_iterate_audio
@@ -169,6 +170,8 @@ def run_inference(
     greedy: bool,
     save_voice_prompt_embeddings: bool,
     cpu_offload: bool = False,
+    qobox_kb: bool = True,
+    rag_query: Optional[str] = None,
 ):
     """Run offline inference using an input WAV as the user-side stream.
 
@@ -238,8 +241,9 @@ def run_inference(
         lm_gen.load_voice_prompt_embeddings(voice_prompt_path)
     else:
         lm_gen.load_voice_prompt(voice_prompt_path)
+    merged_text = merge_prompt_with_qobox_kb(text_prompt, use_kb=qobox_kb, rag_query=rag_query)
     lm_gen.text_prompt_tokens = (
-        text_tokenizer.encode(wrap_with_system_tags(text_prompt)) if len(text_prompt) > 0 else None
+        text_tokenizer.encode(wrap_with_system_tags(merged_text)) if merged_text.strip() else None
     )
 
     # 7) Reset streaming and run initial prompt phases
@@ -382,6 +386,18 @@ def main():
                              "Requires 'accelerate' package.")
     parser.add_argument("--seed", type=int, default=-1, help="Seed for reproducibility (-1 disables)")
 
+    parser.add_argument(
+        "--no-qobox-kb",
+        action="store_true",
+        help="Do not merge the Qobox company knowledge base into the text prompt.",
+    )
+    parser.add_argument(
+        "--rag-query",
+        type=str,
+        default="",
+        help="Optional query to retrieve only relevant Qobox KB chunks (default: use full KB).",
+    )
+
     args = parser.parse_args()
 
     # If --voice-prompt-dir is omitted, voices.tgz is downloaded from HF and extracted.
@@ -424,6 +440,8 @@ def main():
             greedy=greedy,
             save_voice_prompt_embeddings=False,
             cpu_offload=args.cpu_offload,
+            qobox_kb=not args.no_qobox_kb,
+            rag_query=(args.rag_query.strip() or None),
         )
 
 

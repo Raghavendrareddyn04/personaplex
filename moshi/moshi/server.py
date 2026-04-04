@@ -47,6 +47,7 @@ import random
 
 from .client_utils import make_log, colorize
 from .models import loaders, MimiModel, LMModel, LMGen
+from .qobox_kb import merge_prompt_with_qobox_kb
 from .utils.connection import create_ssl_context, get_lan_ip
 from .utils.logging import setup_logger, ColorizedLog
 
@@ -167,8 +168,14 @@ class ServerState:
                 self.lm_gen.load_voice_prompt_embeddings(voice_prompt_path)
             else:
                 self.lm_gen.load_voice_prompt(voice_prompt_path)
-        self.lm_gen.text_prompt_tokens = self.text_tokenizer.encode(wrap_with_system_tags(request.query["text_prompt"])) if len(request.query["text_prompt"]) > 0 else None
-        seed = int(request["seed"]) if "seed" in request.query else None
+        user_text = request.query.get("text_prompt", "")
+        use_qobox_kb = request.query.get("qobox_kb", "1").lower() not in ("0", "false", "no")
+        rag_query = (request.query.get("rag_query") or "").strip() or None
+        merged_text = merge_prompt_with_qobox_kb(user_text, use_kb=use_qobox_kb, rag_query=rag_query)
+        self.lm_gen.text_prompt_tokens = (
+            self.text_tokenizer.encode(wrap_with_system_tags(merged_text)) if merged_text.strip() else None
+        )
+        seed = int(request.query["seed"]) if "seed" in request.query else None
 
         async def recv_loop():
             nonlocal close
@@ -251,8 +258,13 @@ class ServerState:
                     await ws.send_bytes(b"\x01" + msg)
 
         clog.log("info", "accepted connection")
-        if len(request.query["text_prompt"]) > 0:
-            clog.log("info", f"text prompt: {request.query['text_prompt']}")
+        if user_text.strip():
+            clog.log("info", f"text prompt (user): {user_text}")
+        if use_qobox_kb:
+            clog.log("info", f"Qobox KB: merged (rag_query={rag_query!r})")
+        if merged_text.strip():
+            preview = merged_text if len(merged_text) <= 400 else f"{merged_text[:400]}..."
+            clog.log("info", f"merged prompt ({len(merged_text)} chars): {preview}")
         if len(request.query["voice_prompt"]) > 0:
             clog.log("info", f"voice prompt: {voice_prompt_path} (requested: {requested_voice_prompt_path})")
         close = False

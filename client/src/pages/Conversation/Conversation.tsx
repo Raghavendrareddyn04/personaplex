@@ -27,6 +27,10 @@ type ConversationProps = {
   onConversationEnd?: () => void;
   isBypass?: boolean;
   startConnection: () => Promise<void>;
+  /** When set, server retrieves matching Qobox KB chunks instead of the full KB. */
+  ragQuery?: string;
+  /** Default true: merge Qobox company KB into the system prompt. Set false to disable. */
+  includeQoboxKb?: boolean;
 } & Partial<ModelParamsValues>;
 
 const buildURL = ({
@@ -36,6 +40,8 @@ const buildURL = ({
   email,
   textSeed,
   audioSeed,
+  ragQuery,
+  includeQoboxKb,
 }: {
   workerAddr: string;
   params: ModelParamsValues;
@@ -43,6 +49,8 @@ const buildURL = ({
   email?: string;
   textSeed: number;
   audioSeed: number;
+  ragQuery?: string;
+  includeQoboxKb?: boolean;
 }) => {
   let newWorkerAddr = workerAddr;
   if (workerAddr === "same" || workerAddr === "") {
@@ -68,6 +76,13 @@ const buildURL = ({
   url.searchParams.append("repetition_penalty", params.repetitionPenalty.toString());
   url.searchParams.append("text_prompt", params.textPrompt.toString());
   url.searchParams.append("voice_prompt", params.voicePrompt.toString());
+  if (includeQoboxKb === false) {
+    url.searchParams.append("qobox_kb", "0");
+  }
+  const rq = ragQuery?.trim();
+  if (rq) {
+    url.searchParams.append("rag_query", rq);
+  }
   console.log(url.toString());
   return url.toString();
 };
@@ -84,6 +99,8 @@ export const Conversation: FC<ConversationProps> = ({
   isBypass: _isBypass = false,
   email,
   theme,
+  ragQuery,
+  includeQoboxKb,
   ...params
 }) => {
   const getAudioStats = useRef<() => AudioStats>(() => ({
@@ -123,6 +140,8 @@ export const Conversation: FC<ConversationProps> = ({
     email: email,
     textSeed: textSeed,
     audioSeed: audioSeed,
+    ragQuery,
+    includeQoboxKb,
   });
 
   const onDisconnect = useCallback(() => {
