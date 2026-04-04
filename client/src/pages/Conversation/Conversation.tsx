@@ -4,6 +4,7 @@ import { SocketContext } from "./SocketContext";
 import { ServerAudio } from "./components/ServerAudio/ServerAudio";
 import { UserAudio } from "./components/UserAudio/UserAudio";
 import { Button } from "../../components/Button/Button";
+import { QoboxChrome } from "../../components/QoboxChrome/QoboxChrome";
 import { ServerAudioStats } from "./components/ServerAudio/ServerAudioStats";
 import { AudioStats } from "./hooks/useServerAudio";
 import { TextDisplay } from "./components/TextDisplay/TextDisplay";
@@ -21,13 +22,12 @@ type ConversationProps = {
   sessionId?: number;
   email?: string;
   theme: ThemeType;
-  audioContext: MutableRefObject<AudioContext|null>;
-  worklet: MutableRefObject<AudioWorkletNode|null>;
+  audioContext: MutableRefObject<AudioContext | null>;
+  worklet: MutableRefObject<AudioWorkletNode | null>;
   onConversationEnd?: () => void;
   isBypass?: boolean;
   startConnection: () => Promise<void>;
 } & Partial<ModelParamsValues>;
-
 
 const buildURL = ({
   workerAddr,
@@ -44,20 +44,17 @@ const buildURL = ({
   textSeed: number;
   audioSeed: number;
 }) => {
-  const newWorkerAddr = useMemo(() => {
-    if (workerAddr == "same" || workerAddr == "") {
-      const newWorkerAddr = window.location.hostname + ":" + window.location.port;
-      console.log("Overriding workerAddr to", newWorkerAddr);
-      return newWorkerAddr;
-    }
-    return workerAddr;
-  }, [workerAddr]);
-  const wsProtocol = (window.location.protocol === 'https:') ? 'wss' : 'ws';
-  const url = new URL(`${wsProtocol}://${newWorkerAddr}/api/chat`);
-  if(workerAuthId) {
+  let newWorkerAddr = workerAddr;
+  if (workerAddr === "same" || workerAddr === "") {
+    newWorkerAddr = window.location.hostname + ":" + window.location.port;
+    console.log("Overriding workerAddr to", newWorkerAddr);
+  }
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const url = new URL(`${wsProtocol}//${newWorkerAddr}/api/chat`);
+  if (workerAuthId) {
     url.searchParams.append("worker_auth_id", workerAuthId);
   }
-  if(email) {
+  if (email) {
     url.searchParams.append("email", email);
   }
   url.searchParams.append("text_temperature", params.textTemperature.toString());
@@ -75,17 +72,16 @@ const buildURL = ({
   return url.toString();
 };
 
-
-export const Conversation:FC<ConversationProps> = ({
+export const Conversation: FC<ConversationProps> = ({
   workerAddr,
   workerAuthId,
   audioContext,
   worklet,
-  sessionAuthId,
-  sessionId,
-  onConversationEnd,
+  sessionAuthId: _sessionAuthId,
+  sessionId: _sessionId,
+  onConversationEnd: _onConversationEnd,
   startConnection,
-  isBypass=false,
+  isBypass: _isBypass = false,
   email,
   theme,
   ...params
@@ -101,9 +97,16 @@ export const Conversation:FC<ConversationProps> = ({
   const isRecording = useRef<boolean>(false);
   const audioChunks = useRef<Blob[]>([]);
 
-  const audioStreamDestination = useRef<MediaStreamAudioDestinationNode>(audioContext.current!.createMediaStreamDestination());
+  const audioStreamDestination = useRef<MediaStreamAudioDestinationNode>(
+    audioContext.current!.createMediaStreamDestination(),
+  );
   const stereoMerger = useRef<ChannelMergerNode>(audioContext.current!.createChannelMerger(2));
-  const audioRecorder = useRef<MediaRecorder>(new MediaRecorder(audioStreamDestination.current.stream, { mimeType: getMimeType("audio"), audioBitsPerSecond: 128000  }));
+  const audioRecorder = useRef<MediaRecorder>(
+    new MediaRecorder(audioStreamDestination.current.stream, {
+      mimeType: getMimeType("audio"),
+      audioBitsPerSecond: 128000,
+    }),
+  );
   const [audioURL, setAudioURL] = useState<string>("");
   const [isOver, setIsOver] = useState(false);
   const modelParams = useModelParams(params);
@@ -129,7 +132,6 @@ export const Conversation:FC<ConversationProps> = ({
   }, [setIsOver]);
 
   const { socketStatus, sendMessage, socket, start, stop } = useSocket({
-    // onMessage,
     uri: WSURL,
     onDisconnect,
   });
@@ -140,17 +142,16 @@ export const Conversation:FC<ConversationProps> = ({
     audioRecorder.current.onstop = async () => {
       let blob: Blob;
       const mimeType = getMimeType("audio");
-      if(mimeType.includes("webm")) {
+      if (mimeType.includes("webm")) {
         blob = await fixWebmDuration(new Blob(audioChunks.current, { type: mimeType }));
-        } else {
-          blob = new Blob(audioChunks.current, { type: mimeType });
+      } else {
+        blob = new Blob(audioChunks.current, { type: mimeType });
       }
       setAudioURL(URL.createObjectURL(blob));
       audioChunks.current = [];
       console.log("Audio Recording and encoding finished");
     };
   }, [audioRecorder, setAudioURL, audioChunks]);
-
 
   useEffect(() => {
     start();
@@ -160,21 +161,22 @@ export const Conversation:FC<ConversationProps> = ({
   }, [start, workerAuthId]);
 
   const startRecording = useCallback(() => {
-    if(isRecording.current) {
+    if (isRecording.current) {
       return;
     }
     console.log(Date.now() % 1000, "Starting recording");
     console.log("Starting recording");
-    // Build stereo routing for recording: left = server (worklet), right = user mic (connected in useUserAudio)
     try {
       stereoMerger.current.disconnect();
-    } catch {}
+    } catch {
+      /* noop */
+    }
     try {
       worklet.current?.disconnect(audioStreamDestination.current);
-    } catch {}
-    // Route server audio (mono) to left channel of merger
+    } catch {
+      /* noop */
+    }
     worklet.current?.connect(stereoMerger.current, 0, 0);
-    // Connect merger to the MediaStream destination
     stereoMerger.current.connect(audioStreamDestination.current);
 
     setAudioURL("");
@@ -184,51 +186,55 @@ export const Conversation:FC<ConversationProps> = ({
 
   const stopRecording = useCallback(() => {
     console.log("Stopping recording");
-    console.log("isRecording", isRecording)
-    if(!isRecording.current) {
+    console.log("isRecording", isRecording);
+    if (!isRecording.current) {
       return;
     }
     try {
       worklet.current?.disconnect(stereoMerger.current);
-    } catch {}
+    } catch {
+      /* noop */
+    }
     try {
       stereoMerger.current.disconnect(audioStreamDestination.current);
-    } catch {}
+    } catch {
+      /* noop */
+    }
     audioRecorder.current.stop();
     isRecording.current = false;
   }, [isRecording, worklet, audioStreamDestination, audioRecorder, stereoMerger]);
 
   const onPressConnect = useCallback(async () => {
-      if (isOver) {
-        window.location.reload();
+    if (isOver) {
+      window.location.reload();
+    } else {
+      audioContext.current?.resume();
+      if (socketStatus !== "connected") {
+        start();
       } else {
-        audioContext.current?.resume();
-        if (socketStatus !== "connected") {
-          start();
-        } else {
-          stop();
-        }
+        stop();
       }
-    }, [socketStatus, isOver, start, stop]);
+    }
+  }, [socketStatus, isOver, start, stop]);
 
   const socketColor = useMemo(() => {
     if (socketStatus === "connected") {
-      return 'bg-[#76b900]';
+      return "bg-[#15803d]";
     } else if (socketStatus === "connecting") {
-      return 'bg-orange-300';
+      return "bg-orange-300";
     } else {
-      return 'bg-red-400';
+      return "bg-red-400";
     }
   }, [socketStatus]);
 
   const socketButtonMsg = useMemo(() => {
     if (isOver) {
-      return 'New Conversation';
+      return "New Conversation";
     }
     if (socketStatus === "connected") {
-      return 'Disconnect';
+      return "Disconnect";
     } else {
-      return 'Connecting...';
+      return "Connecting...";
     }
   }, [isOver, socketStatus]);
 
@@ -240,56 +246,76 @@ export const Conversation:FC<ConversationProps> = ({
         socket,
       }}
     >
-    <div>
-    <div className="main-grid h-screen max-h-screen w-screen p-4 max-w-96 md:max-w-screen-lg m-auto">
-      <div className="controls text-center flex justify-center items-center gap-2">
-         <Button
-            onClick={onPressConnect}
-            disabled={socketStatus !== "connected" && !isOver}
-          >
-            {socketButtonMsg}
-          </Button>
-          <div className={`h-4 w-4 rounded-full ${socketColor}`} />
-        </div>
-        {audioContext.current && worklet.current && <MediaContext.Provider value={
-          {
-            startRecording,
-            stopRecording,
-            audioContext: audioContext as MutableRefObject<AudioContext>,
-            worklet: worklet as MutableRefObject<AudioWorkletNode>,
-            audioStreamDestination,
-            stereoMerger,
-            micDuration,
-            actualAudioPlayed,
-          }
-        }>
-          <div className="relative player h-full max-h-full w-full justify-between gap-3 md:p-12">
-              <ServerAudio
-                setGetAudioStats={(callback: () => AudioStats) =>
-                  (getAudioStats.current = callback)
-                }
-                theme={theme}
-              />
-              <UserAudio theme={theme}/>
-              <div className="pt-8 text-sm flex justify-center items-center flex-col download-links">
-                {audioURL && <div><a href={audioURL} download={`personaplex_audio.${getExtension("audio")}`} className="pt-2 text-center block">Download audio</a></div>}
+      <QoboxChrome subtitle="Live session">
+        <div className="qobox-conversation-grid">
+          <aside className="qobox-legend-conv border border-[#14532d] bg-[#22c55e] p-3 text-left text-black">
+            <h2 className="mb-2 text-sm font-bold">Legend:</h2>
+            <ul className="mb-3 list-disc pl-4 text-[0.75rem] leading-snug">
+              <li>Server audio (visualizer) plays the assistant; your mic feeds the model.</li>
+              <li>Use Disconnect to end the socket, or New Conversation to reload after a drop.</li>
+              <li>Transcript and timing stats appear in the right column.</li>
+            </ul>
+            <div className="border-t border-[#14532d] pt-2 text-[0.7rem] leading-snug">
+              <ServerInfo />
+            </div>
+          </aside>
+
+          <div className="qobox-conv-controls controls flex items-center justify-center gap-2 text-center">
+            <Button onClick={onPressConnect} disabled={socketStatus !== "connected" && !isOver}>
+              {socketButtonMsg}
+            </Button>
+            <div className={`h-4 w-4 rounded-full ${socketColor}`} title={socketStatus} />
+          </div>
+
+          {audioContext.current && worklet.current && (
+            <MediaContext.Provider
+              value={{
+                startRecording,
+                stopRecording,
+                audioContext: audioContext as MutableRefObject<AudioContext>,
+                worklet: worklet as MutableRefObject<AudioWorkletNode>,
+                audioStreamDestination,
+                stereoMerger,
+                micDuration,
+                actualAudioPlayed,
+              }}
+            >
+              <div className="relative player flex h-full max-h-full w-full flex-col items-center justify-between gap-3 md:p-8">
+                <ServerAudio
+                  setGetAudioStats={(callback: () => AudioStats) =>
+                    (getAudioStats.current = callback)
+                  }
+                  theme={theme}
+                />
+                <UserAudio theme={theme} />
+                <div className="download-links flex flex-col items-center justify-center pt-4 text-sm">
+                  {audioURL && (
+                    <a
+                      href={audioURL}
+                      download={`qobox_audio.${getExtension("audio")}`}
+                      className="block pt-2 text-center underline"
+                    >
+                      Download audio
+                    </a>
+                  )}
+                </div>
               </div>
-          </div>
-          <div className="scrollbar player-text" ref={textContainerRef}>
-            <TextDisplay containerRef={textContainerRef}/>
-          </div>
-          <div className="player-stats hidden md:block">
-            <ServerAudioStats getAudioStats={getAudioStats} />
-          </div></MediaContext.Provider>}
+
+              <div className="qobox-conv-right">
+                <div className="qobox-detail-panel w-full shrink-0">
+                  <ServerAudioStats getAudioStats={getAudioStats} />
+                </div>
+                <div
+                  className="qobox-detail-panel qobox-detail-panel--text scrollbar player-text"
+                  ref={textContainerRef}
+                >
+                  <TextDisplay containerRef={textContainerRef} />
+                </div>
+              </div>
+            </MediaContext.Provider>
+          )}
         </div>
-        <div className="max-w-96 md:max-w-screen-lg p-4 m-auto text-center">
-          <ServerInfo/>
-        </div>
-      </div>
+      </QoboxChrome>
     </SocketContext.Provider>
   );
 };
-
-        // </MediaContext.Provider> : undefined}
-        // 
-        // }></MediaContext.Provider>

@@ -4,6 +4,7 @@ import eruda from "eruda";
 import { useSearchParams } from "react-router-dom";
 import { Conversation } from "../Conversation/Conversation";
 import { Button } from "../../components/Button/Button";
+import { QoboxChrome } from "../../components/QoboxChrome/QoboxChrome";
 import { useModelParams } from "../Conversation/hooks/useModelParams";
 import { env } from "../../env";
 import { prewarmDecoderWorker } from "../../decoder/decoderWorker";
@@ -52,81 +53,134 @@ const Homepage = ({
   setVoicePrompt,
 }: HomepageProps) => {
   return (
-    <div className="text-center h-screen w-screen p-4 flex flex-col items-center pt-8">
-      <div className="mb-6">
-        <h1 className="text-4xl text-black">PersonaPlex</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          Full duplex conversational AI with text and voice control.
-        </p>
-      </div>
+    <QoboxChrome subtitle="Session setup">
+      <div className="qobox-home-grid">
+        <aside className="qobox-legend-panel">
+          <h2>Legend:</h2>
+          <ul>
+            <li>Grant microphone access when the browser asks—required for duplex audio.</li>
+            <li>Define the assistant behavior with a text prompt; use presets or write your own (max 1000 characters).</li>
+            <li>Select a voice profile (natural or variety) for synthesized replies.</li>
+            <li>Connect to start the live session with the server.</li>
+          </ul>
+        </aside>
 
-      <div className="flex flex-grow justify-center items-center flex-col gap-6 w-full min-w-[500px] max-w-2xl">
-        <div className="w-full">
-          <label htmlFor="text-prompt" className="block text-left text-base font-medium text-gray-700 mb-2">
-            Text Prompt:
-          </label>
-          <div className="border border-gray-300 rounded p-3 mb-3 bg-gray-50">
-            <span className="text-xs font-medium text-gray-500 block mb-2">Examples:</span>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {TEXT_PROMPT_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => setTextPrompt(preset.text)}
-                  className="px-3 py-1 text-xs bg-white hover:bg-gray-100 text-gray-700 rounded-full border border-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-[#76b900]"
-                >
-                  {preset.label}
-                </button>
-              ))}
+        <div className="qobox-home-flow-col">
+          <div className="qobox-flow-box">
+            <div className="qobox-flow-box-title">Text prompt</div>
+            <label htmlFor="text-prompt" className="sr-only">
+              Text prompt
+            </label>
+            <div className="mb-2 border border-zinc-400 bg-zinc-50 p-2">
+              <span className="mb-1 block text-left text-[0.65rem] font-medium text-zinc-600">
+                Examples:
+              </span>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {TEXT_PROMPT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setTextPrompt(preset.text)}
+                    className="rounded-sm border border-zinc-400 bg-white px-2 py-0.5 text-[0.65rem] text-zinc-800 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#15803d]"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <textarea
+              id="text-prompt"
+              name="text-prompt"
+              value={textPrompt}
+              onChange={(e) => setTextPrompt(e.target.value)}
+              className="h-28 w-full resize-y border border-zinc-400 bg-white p-2 text-sm text-black focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#15803d]"
+              placeholder="Enter your text prompt..."
+              maxLength={1000}
+            />
+            <div className="mt-1 text-right text-[0.65rem] text-zinc-600">
+              {textPrompt.length}/1000
             </div>
           </div>
-          <textarea
-            id="text-prompt"
-            name="text-prompt"
-            value={textPrompt}
-            onChange={(e) => setTextPrompt(e.target.value)}
-            className="w-full h-32 min-h-[80px] max-h-64 p-3 bg-white text-black border border-gray-300 rounded resize-y focus:outline-none focus:ring-2 focus:ring-[#76b900] focus:border-transparent"
-            placeholder="Enter your text prompt..."
-            maxLength={1000}
-          />
-          <div className="text-right text-xs text-gray-500 mt-1">
-            {textPrompt.length}/1000
+
+          <div className="qobox-flow-arrow" aria-hidden>
+            ↓
+          </div>
+
+          <div className="qobox-flow-box">
+            <div className="qobox-flow-box-title">Voice</div>
+            <label htmlFor="voice-prompt" className="sr-only">
+              Voice
+            </label>
+            <select
+              id="voice-prompt"
+              name="voice-prompt"
+              value={voicePrompt}
+              onChange={(e) => setVoicePrompt(e.target.value)}
+              className="w-full border border-zinc-400 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#15803d]"
+            >
+              {VOICE_OPTIONS.map((voice) => (
+                <option key={voice} value={voice}>
+                  {voice
+                    .replace(".pt", "")
+                    .replace(/^NAT/, "NATURAL_")
+                    .replace(/^VAR/, "VARIETY_")}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="qobox-flow-arrow" aria-hidden>
+            ↓
+          </div>
+
+          <div className="qobox-flow-box">
+            <div className="qobox-flow-box-title">Connect</div>
+            {showMicrophoneAccessMessage && (
+              <p className="mb-2 text-center text-xs text-red-600">
+                Please enable your microphone before proceeding
+              </p>
+            )}
+            <div className="flex justify-center">
+              <Button onClick={async () => await startConnection()}>Connect</Button>
+            </div>
           </div>
         </div>
 
-        <div className="w-full">
-          <label htmlFor="voice-prompt" className="block text-left text-base font-medium text-gray-700 mb-2">
-            Voice:
-          </label>
-          <select
-            id="voice-prompt"
-            name="voice-prompt"
-            value={voicePrompt}
-            onChange={(e) => setVoicePrompt(e.target.value)}
-            className="w-full p-3 bg-white text-black border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#76b900] focus:border-transparent"
-          >
-            {VOICE_OPTIONS.map((voice) => (
-              <option key={voice} value={voice}>
-                {voice
-                  .replace('.pt', '')
-                  .replace(/^NAT/, 'NATURAL_')
-                  .replace(/^VAR/, 'VARIETY_')}
-              </option>
-            ))}
-          </select>
+        <div className="qobox-home-detail-col">
+          <div className="qobox-detail-panel" data-step="1">
+            Example dialogue style: greeting and assistance (e.g. a friendly teacher answering clearly).
+            Presets cover assistant, medical intake, bank verification, or technical crisis roleplay—tap
+            one to load, or write your own instructions.
+          </div>
+          <div className="hidden qobox-flow-arrow lg:block" aria-hidden>
+            ↓
+          </div>
+          <div className="qobox-detail-panel" data-step="2">
+            Choose a natural or variety voice bundle for the assistant output. Each option maps to a
+            different speaker checkpoint.
+          </div>
+          <div className="hidden qobox-flow-arrow lg:block" aria-hidden>
+            ↓
+          </div>
+          <div className="qobox-detail-panel" data-step="3">
+            The browser will request microphone permission when you connect. Approve it so your speech
+            can reach the assistant in real time.
+          </div>
+          <div className="hidden qobox-flow-arrow lg:block" aria-hidden>
+            ↓
+          </div>
+          <div className="qobox-detail-panel" data-step="4">
+            Starts the duplex WebSocket session: you speak, the model replies with audio and text.
+            Ensure the worker is reachable from this page.
+          </div>
+        </div>
       </div>
-
-        {showMicrophoneAccessMessage && (
-          <p className="text-center text-red-500">Please enable your microphone before proceeding</p>
-        )}
-        
-        <Button onClick={async () => await startConnection()}>Connect</Button>
-    </div>
-    </div>
+    </QoboxChrome>
   );
-}
+};
 
-export const Queue:FC = () => {
-  const theme = "light" as const;  // Always use light theme
+export const Queue: FC = () => {
+  const theme = "light" as const;
   const [searchParams] = useSearchParams();
   const overrideWorkerAddr = searchParams.get("worker_addr");
   const [hasMicrophoneAccess, setHasMicrophoneAccess] = useState<boolean>(false);
@@ -135,14 +189,13 @@ export const Queue:FC = () => {
 
   const audioContext = useRef<AudioContext | null>(null);
   const worklet = useRef<AudioWorkletNode | null>(null);
-  
-  // enable eruda in development
+
   useEffect(() => {
-    if(env.VITE_ENV === "development") {
+    if (env.VITE_ENV === "development") {
       eruda.init();
     }
-    () => {
-      if(env.VITE_ENV === "development") {
+    return () => {
+      if (env.VITE_ENV === "development") {
         eruda.destroy();
       }
     };
@@ -153,53 +206,48 @@ export const Queue:FC = () => {
       await window.navigator.mediaDevices.getUserMedia({ audio: true });
       setHasMicrophoneAccess(true);
       return true;
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       setShowMicrophoneAccessMessage(true);
       setHasMicrophoneAccess(false);
     }
     return false;
-}, [setHasMicrophoneAccess, setShowMicrophoneAccessMessage]);
+  }, [setHasMicrophoneAccess, setShowMicrophoneAccessMessage]);
 
   const startProcessor = useCallback(async () => {
-    if(!audioContext.current) {
+    if (!audioContext.current) {
       audioContext.current = new AudioContext();
-      // Prewarm decoder worker as soon as we have audio context
-      // This gives WASM time to load while user grants mic access
       prewarmDecoderWorker(audioContext.current.sampleRate);
     }
-    if(worklet.current) {
+    if (worklet.current) {
       return;
     }
-    let ctx = audioContext.current;
+    const ctx = audioContext.current;
     ctx.resume();
     try {
-      worklet.current = new AudioWorkletNode(ctx, 'moshi-processor');
-    } catch (err) {
+      worklet.current = new AudioWorkletNode(ctx, "moshi-processor");
+    } catch {
       await ctx.audioWorklet.addModule(moshiProcessorUrl);
-      worklet.current = new AudioWorkletNode(ctx, 'moshi-processor');
+      worklet.current = new AudioWorkletNode(ctx, "moshi-processor");
     }
     worklet.current.connect(ctx.destination);
   }, [audioContext, worklet]);
 
-  const startConnection = useCallback(async() => {
-      await startProcessor();
-      const hasAccess = await getMicrophoneAccess();
-      if (hasAccess) {
-      // Values are already set in modelParams, they get passed to Conversation
-    }
+  const startConnection = useCallback(async () => {
+    await startProcessor();
+    await getMicrophoneAccess();
   }, [startProcessor, getMicrophoneAccess]);
 
   return (
     <>
-      {(hasMicrophoneAccess && audioContext.current && worklet.current) ? (
+      {hasMicrophoneAccess && audioContext.current && worklet.current ? (
         <Conversation
-        workerAddr={overrideWorkerAddr ?? ""}
-        audioContext={audioContext as MutableRefObject<AudioContext|null>}
-        worklet={worklet as MutableRefObject<AudioWorkletNode|null>}
-        theme={theme}
-        startConnection={startConnection}
-        {...modelParams}
+          workerAddr={overrideWorkerAddr ?? ""}
+          audioContext={audioContext as MutableRefObject<AudioContext | null>}
+          worklet={worklet as MutableRefObject<AudioWorkletNode | null>}
+          theme={theme}
+          startConnection={startConnection}
+          {...modelParams}
         />
       ) : (
         <Homepage

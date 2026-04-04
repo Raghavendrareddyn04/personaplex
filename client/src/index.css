@@ -27,6 +27,202 @@
   }
 }
 
+/* Qobox virtual voice assistant shell */
+.qobox-tab {
+  display: inline-block;
+  border: 1px solid #1a1a1a;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.qobox-tab-active {
+  background: #e8e8e8;
+  font-weight: 600;
+}
+
+.qobox-tab-inactive {
+  background: #fafafa;
+  color: #71717a;
+}
+
+.qobox-home-grid {
+  display: grid;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 1rem 1.25rem;
+  padding: 1rem;
+  align-items: start;
+  grid-template-columns: 1fr;
+}
+
+@media screen and (min-width: 1024px) {
+  .qobox-home-grid {
+    grid-template-columns: minmax(220px, 280px) minmax(280px, 400px) minmax(
+        220px,
+        1fr
+      );
+    grid-template-rows: auto;
+  }
+}
+
+.qobox-legend-panel {
+  border: 1px solid #14532d;
+  background: #22c55e;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.qobox-legend-panel h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #000;
+}
+
+.qobox-legend-panel ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #000;
+}
+
+.qobox-flow-box {
+  border: 1px solid #000;
+  background: #fff;
+  padding: 0.75rem 1rem;
+  width: 100%;
+}
+
+.qobox-flow-box-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  color: #000;
+}
+
+.qobox-flow-arrow {
+  text-align: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.15rem 0;
+  color: #000;
+}
+
+.qobox-detail-panel {
+  border: 1px solid #a1a1aa;
+  background: linear-gradient(180deg, #f4f4f5 0%, #e4e4e7 100%);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #18181b;
+  width: 100%;
+}
+
+.qobox-home-flow-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+}
+
+.qobox-home-detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+@media screen and (min-width: 1024px) {
+  .qobox-home-detail-col {
+    gap: 0;
+  }
+
+  .qobox-detail-panel[data-step="1"] {
+    min-height: 11rem;
+  }
+
+  .qobox-detail-panel[data-step="2"] {
+    min-height: 5.5rem;
+  }
+
+  .qobox-detail-panel[data-step="3"] {
+    min-height: 3rem;
+  }
+
+  .qobox-detail-panel[data-step="4"] {
+    min-height: 4rem;
+  }
+}
+
+.qobox-conversation-grid {
+  display: grid;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 1rem;
+  min-height: 0;
+  flex: 1;
+  padding: 1rem;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "legend"
+    "controls"
+    "player"
+    "rightcol";
+}
+
+@media screen and (min-width: 768px) {
+  .qobox-conversation-grid {
+    grid-template-columns: minmax(200px, 260px) minmax(260px, 1fr) minmax(
+        260px,
+        340px
+      );
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "legend controls controls"
+      "legend player rightcol";
+  }
+}
+
+.qobox-legend-conv {
+  grid-area: legend;
+}
+
+.qobox-conversation-grid .player {
+  grid-area: player;
+}
+
+.qobox-conv-controls {
+  grid-area: controls;
+}
+
+.qobox-conv-right {
+  grid-area: rightcol;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  min-height: 200px;
+}
+
+.qobox-conv-right .player-text {
+  flex: 1;
+  min-height: 120px;
+}
+
+.qobox-detail-panel--text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .main-grid {
   display: grid;
   grid-template-columns: 1fr;
