@@ -29,8 +29,6 @@ type ConversationProps = {
   startConnection: () => Promise<void>;
   /** When set, server retrieves matching Qobox KB chunks instead of the full KB. */
   ragQuery?: string;
-  /** Default true: merge Qobox company KB into the system prompt. Set false to disable. */
-  includeQoboxKb?: boolean;
 } & Partial<ModelParamsValues>;
 
 const buildURL = ({
@@ -41,7 +39,6 @@ const buildURL = ({
   textSeed,
   audioSeed,
   ragQuery,
-  includeQoboxKb,
 }: {
   workerAddr: string;
   params: ModelParamsValues;
@@ -50,7 +47,6 @@ const buildURL = ({
   textSeed: number;
   audioSeed: number;
   ragQuery?: string;
-  includeQoboxKb?: boolean;
 }) => {
   let newWorkerAddr = workerAddr;
   if (workerAddr === "same" || workerAddr === "") {
@@ -76,7 +72,7 @@ const buildURL = ({
   url.searchParams.append("repetition_penalty", params.repetitionPenalty.toString());
   url.searchParams.append("text_prompt", params.textPrompt.toString());
   url.searchParams.append("voice_prompt", params.voicePrompt.toString());
-  if (includeQoboxKb === false) {
+  if (params.includeQoboxKb === false) {
     url.searchParams.append("qobox_kb", "0");
   }
   const rq = ragQuery?.trim();
@@ -100,7 +96,6 @@ export const Conversation: FC<ConversationProps> = ({
   email,
   theme,
   ragQuery,
-  includeQoboxKb,
   ...params
 }) => {
   const getAudioStats = useRef<() => AudioStats>(() => ({
@@ -141,7 +136,6 @@ export const Conversation: FC<ConversationProps> = ({
     textSeed: textSeed,
     audioSeed: audioSeed,
     ragQuery,
-    includeQoboxKb,
   });
 
   const onDisconnect = useCallback(() => {

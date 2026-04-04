@@ -11,6 +11,7 @@ export const DEFAULT_REPETITION_PENALTY = 1.0;
 export const DEFAULT_TEXT_PROMPT = "You are a wise and friendly teacher. Answer questions or provide advice in a clear and engaging way.";
 export const DEFAULT_VOICE_PROMPT = "NATF0.pt";
 export const DEFAULT_RANDOM_SEED = -1;
+export const DEFAULT_INCLUDE_QOBOX_KB = true;
 
 export type ModelParamsValues = {
   textTemperature: number;
@@ -23,6 +24,7 @@ export type ModelParamsValues = {
   textPrompt: string;
   voicePrompt: string;
   randomSeed: number;
+  includeQoboxKb: boolean;
 };
 
 type useModelParamsArgs = Partial<ModelParamsValues>;
@@ -39,6 +41,10 @@ export const useModelParams = (params?:useModelParamsArgs) => {
   const [textPrompt, setTextPromptBase] = useState(params?.textPrompt || DEFAULT_TEXT_PROMPT);
   const [voicePrompt, setVoicePromptBase] = useState(params?.voicePrompt || DEFAULT_VOICE_PROMPT);
   const [randomSeed, setRandomSeedBase] = useLocalStorage('randomSeed', params?.randomSeed || DEFAULT_RANDOM_SEED);
+  const [includeQoboxKb, setIncludeQoboxKbBase] = useLocalStorage(
+    'includeQoboxKb',
+    params?.includeQoboxKb ?? DEFAULT_INCLUDE_QOBOX_KB,
+  );
 
   const resetParams = useCallback(() => {
     setTextTemperatureBase(DEFAULT_TEXT_TEMPERATURE);
@@ -69,6 +75,7 @@ export const useModelParams = (params?:useModelParamsArgs) => {
     setTextPromptBase(params.textPrompt);
     setVoicePromptBase(params.voicePrompt);
     setRandomSeedBase(params.randomSeed);
+    setIncludeQoboxKbBase(params.includeQoboxKb);
   }, [
     setTextTemperatureBase,
     setTextTopkBase,
@@ -80,6 +87,7 @@ export const useModelParams = (params?:useModelParamsArgs) => {
     setTextPromptBase,
     setVoicePromptBase,
     setRandomSeedBase,
+    setIncludeQoboxKbBase,
   ]);
 
   const setTextTemperature = useCallback((value: number) => {
@@ -126,6 +134,9 @@ export const useModelParams = (params?:useModelParamsArgs) => {
   const setRandomSeed = useCallback((value: number) => {
     setRandomSeedBase(value);
   }, []);
+  const setIncludeQoboxKb = useCallback((value: boolean) => {
+    setIncludeQoboxKbBase(value);
+  }, []);
 
   return {
     textTemperature,
@@ -150,5 +161,7 @@ export const useModelParams = (params?:useModelParamsArgs) => {
     setParams,
     randomSeed,
     setRandomSeed,
+    includeQoboxKb,
+    setIncludeQoboxKb,
   }
 }

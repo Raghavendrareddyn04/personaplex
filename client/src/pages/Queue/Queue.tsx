@@ -42,6 +42,8 @@ interface HomepageProps {
   setTextPrompt: (value: string) => void;
   voicePrompt: string;
   setVoicePrompt: (value: string) => void;
+  includeQoboxKb: boolean;
+  setIncludeQoboxKb: (value: boolean) => void;
 }
 
 const Homepage = ({
@@ -51,6 +53,8 @@ const Homepage = ({
   setTextPrompt,
   voicePrompt,
   setVoicePrompt,
+  includeQoboxKb,
+  setIncludeQoboxKb,
 }: HomepageProps) => {
   return (
     <QoboxChrome subtitle="Session setup">
@@ -99,6 +103,19 @@ const Homepage = ({
             />
             <div className="mt-1 text-right text-[0.65rem] text-zinc-600">
               {textPrompt.length}/1000
+            </div>
+            <div className="mt-3 flex items-start gap-2 border-t border-zinc-200 pt-3 text-left">
+              <input
+                id="include-qobox-kb"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 border-zinc-400 text-[#15803d] focus:ring-[#15803d]"
+                checked={includeQoboxKb}
+                onChange={(e) => setIncludeQoboxKb(e.target.checked)}
+              />
+              <label htmlFor="include-qobox-kb" className="text-[0.8rem] leading-snug text-zinc-800">
+                Include Qobox company knowledge in this session (server merges the knowledge base into
+                the system prompt). Turn off for the original behavior with only your text prompt above.
+              </label>
             </div>
           </div>
 
@@ -257,6 +274,8 @@ export const Queue: FC = () => {
           setTextPrompt={modelParams.setTextPrompt}
           voicePrompt={modelParams.voicePrompt}
           setVoicePrompt={modelParams.setVoicePrompt}
+          includeQoboxKb={modelParams.includeQoboxKb}
+          setIncludeQoboxKb={modelParams.setIncludeQoboxKb}
         />
       )}
     </>

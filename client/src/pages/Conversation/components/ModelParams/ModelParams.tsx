@@ -20,6 +20,8 @@ export const ModelParams:FC<ModelParamsProps> = ({
   textPrompt,
   voicePrompt,
   randomSeed,
+  includeQoboxKb,
+  setIncludeQoboxKb,
   modal,
 }) => {
   const [modalVoicePrompt, setModalVoicePrompt] = useState<string>(voicePrompt);
@@ -59,6 +61,20 @@ export const ModelParams:FC<ModelParamsProps> = ({
                 </select>
               </td>
             </tr>
+            <tr>
+              <td colSpan={3} className="p-2 text-left">
+                <label className="inline-flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 border-gray-300"
+                    checked={includeQoboxKb}
+                    onChange={(e) => setIncludeQoboxKb(e.target.checked)}
+                    disabled={isConnected}
+                  />
+                  <span>Include Qobox company knowledge (KB)</span>
+                </label>
+              </td>
+            </tr>
           </tbody>
         </table>
         <div>
@@ -76,6 +92,7 @@ export const ModelParams:FC<ModelParamsProps> = ({
             textPrompt: modalTextPrompt,
             voicePrompt: modalVoicePrompt,
             randomSeed,
+            includeQoboxKb,
           });
           modal?.current?.close()
         }} className="m-2">Validate</Button>
