@@ -23,25 +23,8 @@ const TEXT_PROMPT_PRESETS = [
   },
   {
     label: "888 IVR (1-9 menu)",
-    text: [
-      "You are an IVR call assistant for 888 IVR.",
-      "Start every new call by greeting the user, then ask them to select one option from 1 to 9.",
-      "Menu options:",
-      "1. My Best Offers",
-      "2. Data Bundles",
-      "3. Voice Bundles",
-      "4. Mixed & Other Bundles",
-      "5. Services",
-      "6. Packages & Migration",
-      "7. Balance Inquiry",
-      "8. Further Assistance",
-      "9. DRN Bundles / Deactivation",
-      "Rules:",
-      "- Accept only a single digit from 1 to 9 as a valid selection.",
-      "- If the user says anything else, politely ask them again to choose a number from 1 to 9.",
-      "- After a valid selection, confirm the selected option clearly and continue helping within that option only.",
-      "- Keep responses short, polite, and call-center style.",
-    ].join(" "),
+    text: "You are 888 IVR. First response must be short: greet and ask caller to press or say one number from 1 to 9. Menu: 1 My Best Offers, 2 Data Bundles, 3 Voice Bundles, 4 Mixed & Other Bundles, 5 Services, 6 Packages & Migration, 7 Balance Inquiry, 8 Further Assistance, 9 DRN Bundles/Deactivation. Accept only one digit (1-9). If invalid, reprompt briefly. After valid input, confirm selected number and continue only in that branch with concise call-center replies.",
+    disableQoboxKb: true,
   },
   {
     label: "Medical office (service)",
@@ -106,7 +89,12 @@ const Homepage = ({
                   <button
                     key={preset.label}
                     type="button"
-                    onClick={() => setTextPrompt(preset.text)}
+                    onClick={() => {
+                      setTextPrompt(preset.text);
+                      if (preset.disableQoboxKb) {
+                        setIncludeQoboxKb(false);
+                      }
+                    }}
                     className="rounded-sm border border-zinc-400 bg-white px-2 py-0.5 text-[0.65rem] text-zinc-800 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#15803d]"
                   >
                     {preset.label}
