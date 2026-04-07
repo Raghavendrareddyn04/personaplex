@@ -54,9 +54,9 @@ def setup_logger(name: str, log_file=None, level=logging.INFO):
 def print_log(level: str, msg: str, prefix: Optional[str] = None, info_color: Optional[str] = None):
     colorized_msg = make_log(level, msg) if info_color is None or level != "info" else colorize(msg, info_color)
     if prefix is None:
-        print(colorized_msg)
+        print(colorized_msg, flush=True)
     else:
-        print(prefix + colorized_msg)
+        print(prefix + colorized_msg, flush=True)
 
 
 class ColorizedLog(object):

@@ -100,16 +100,19 @@ export const useSocket = ({
     if(socketStatus !== "connected") {
       return;
     }
+    // Use a long timeout so normal silence periods between turns don't
+    // close the socket. The real-time model continuously streams audio
+    // (including silence frames), so a genuine stall should be rare.
+    // 120 seconds is conservative enough for any plausible pause.
+    const INACTIVITY_TIMEOUT_MS = 120_000;
     const intervalId = setInterval(() => {
-      if (lastMessageTime.current && Date.now() - lastMessageTime.current > 10000) {
+      if (lastMessageTime.current && Date.now() - lastMessageTime.current > INACTIVITY_TIMEOUT_MS) {
         console.log("closing socket due to inactivity", socketRef.current);
         socketRef.current?.close();
-        // onDisconnect();
       }
     }, 500);
 
     return () => {
-      // lastMessageTime.current = null;
       clearInterval(intervalId);
     };
   }, [socketStatus, onDisconnect]);

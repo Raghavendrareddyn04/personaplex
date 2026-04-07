@@ -210,43 +210,48 @@ class ServerState:
 
         async def opus_loop():
             all_pcm_data = None
+            frames_processed = 0
 
-            while True:
-                if close:
-                    return
-                await asyncio.sleep(0.001)
-                pcm = opus_reader.read_pcm()
-                if pcm.shape[-1] == 0:
-                    continue
-                if all_pcm_data is None:
-                    all_pcm_data = pcm
-                else:
-                    all_pcm_data = np.concatenate((all_pcm_data, pcm))
-                while all_pcm_data.shape[-1] >= self.frame_size:
-                    be = time.time()
-                    chunk = all_pcm_data[: self.frame_size]
-                    all_pcm_data = all_pcm_data[self.frame_size:]
-                    chunk = torch.from_numpy(chunk)
-                    chunk = chunk.to(device=self.device)[None, None]
-                    codes = self.mimi.encode(chunk)
-                    _ = self.other_mimi.encode(chunk)
-                    for c in range(codes.shape[-1]):
-                        tokens = self.lm_gen.step(codes[:, :, c: c + 1])
-                        if tokens is None:
-                            continue
-                        assert tokens.shape[1] == self.lm_gen.lm_model.dep_q + 1
-                        main_pcm = self.mimi.decode(tokens[:, 1:9])
-                        _ = self.other_mimi.decode(tokens[:, 1:9])
-                        main_pcm = main_pcm.cpu()
-                        opus_writer.append_pcm(main_pcm[0, 0].numpy())
-                        text_token = tokens[0, 0, 0].item()
-                        if text_token not in (0, 3):
-                            _text = self.text_tokenizer.id_to_piece(text_token)  # type: ignore
-                            _text = _text.replace("▁", " ")
-                            msg = b"\x02" + bytes(_text, encoding="utf8")
-                            await ws.send_bytes(msg)
-                        else:
-                            text_token_map = ['EPAD', 'BOS', 'EOS', 'PAD']
+            try:
+                while True:
+                    if close:
+                        return
+                    await asyncio.sleep(0.001)
+                    pcm = opus_reader.read_pcm()
+                    if pcm.shape[-1] == 0:
+                        continue
+                    if all_pcm_data is None:
+                        all_pcm_data = pcm
+                    else:
+                        all_pcm_data = np.concatenate((all_pcm_data, pcm))
+                    while all_pcm_data.shape[-1] >= self.frame_size:
+                        be = time.time()
+                        chunk = all_pcm_data[: self.frame_size]
+                        all_pcm_data = all_pcm_data[self.frame_size:]
+                        chunk = torch.from_numpy(chunk)
+                        chunk = chunk.to(device=self.device)[None, None]
+                        frames_processed += 1
+                        codes = self.mimi.encode(chunk)
+                        _ = self.other_mimi.encode(chunk)
+                        for c in range(codes.shape[-1]):
+                            tokens = self.lm_gen.step(codes[:, :, c: c + 1])
+                            if tokens is None:
+                                continue
+                            assert tokens.shape[1] == self.lm_gen.lm_model.dep_q + 1
+                            main_pcm = self.mimi.decode(tokens[:, 1:9])
+                            _ = self.other_mimi.decode(tokens[:, 1:9])
+                            main_pcm = main_pcm.cpu()
+                            opus_writer.append_pcm(main_pcm[0, 0].numpy())
+                            text_token = tokens[0, 0, 0].item()
+                            if text_token not in (0, 3):
+                                _text = self.text_tokenizer.id_to_piece(text_token)  # type: ignore
+                                _text = _text.replace("▁", " ")
+                                msg = b"\x02" + bytes(_text, encoding="utf8")
+                                await ws.send_bytes(msg)
+            except Exception as e:
+                clog.log("error", f"opus_loop crashed after {frames_processed} frames: {e}")
+                import traceback; traceback.print_exc()
+                raise
 
         async def send_loop():
             while True:
